@@ -1,40 +1,4 @@
-from collections import UserDict
-
-
-class Field:
-    def __init__(self, value):
-        self.value = value
-
-
-class Name(Field):
-    pass
-
-
-class Phone(Field):
-    pass
-
-
-
-class Record:
-    def __init__(self, name):
-        self.name = name
-        self.phones = []
-
-    def add_phone(self, phone):
-        self.phones.append(phone)
-
-    def delete_phone(self, phone):
-        if phone in self.phones:
-            self.phones.remove(phone)
-
-    def edit_phone(self, phone):
-        pass
-
-
-class AddressBook(UserDict):
-
-    def add_record(self, record):
-        self.data[record.name] = record.phones
+from classes import AddressBook, Record
 
 
 users = AddressBook()
@@ -63,18 +27,20 @@ def hello_user() -> str:
 
 @input_error
 def add_contact(data: list) -> str:
-    name, phone = normalize_data(data)
+    name, phones = normalize_data(data)
     record = Record(name)
-    record.add_phone(phone)
+    for phone in phones:
+        record.add_phone(phone)
     users.add_record(record)
     return f'New contact added: {name}'
 
 
 @input_error
 def change_phone(data: list) -> str:
-    name, phone = normalize_data(data)
-    users[name] = phone
-    return f'New phone number {phone} for {name}'
+    name, phones = normalize_data(data)
+    record = users[name]
+    record.edit_phones(phones)
+    return f'New phone number for {name}'
 
 
 @input_error
@@ -86,8 +52,8 @@ def search_phone(name: list) -> str:
 @input_error
 def show_all_users() -> str:
     all_users = ''
-    for name, phone in users.items():
-        all_users += f'{name}: {phone} \n'
+    for name, phones in users.get_all_record().items():
+        all_users += f'{phones.get_info()} \n'
     return all_users
 
 
@@ -101,6 +67,23 @@ def stop_work() -> str:
     return 'Good bye!'
 
 
+@input_error
+def delete_user(data):
+    name, phones = normalize_data(data)
+    users.remove_record(name)
+    return f'You deleted the contact: {name}'
+
+
+@input_error
+def delete_phone(data):
+    name, phone = normalize_data(data)
+    print(phone)
+    record = users[name]
+    if record.delete_phone(phone[0]):
+        return f'Phone {phone[0]} for {name} contact deleted.'
+    return f'{name} contact does not have this number'
+
+
 user_commands = {
     'hello': hello_user,
     'add': add_contact,
@@ -110,12 +93,16 @@ user_commands = {
     'good bye': stop_work,
     'close': stop_work,
     'exit': stop_work,
+    'delete phone': delete_phone,
+    'delete': delete_user
 }
 
 
 def command_parser(input_message: str):
-    input_command = [key for key in user_commands if input_message.lower().startswith(key)]
-    input_command = ''.join(input_command)
+    for key in user_commands:
+        if input_message.lower().startswith(key):
+            input_command = key
+            break
     input_data = input_message.lower().replace(input_command, '').strip().split(' ')
     if input_command in user_commands.keys() and input_data[0]:
         return user_commands.get(input_command)(input_data)
@@ -127,7 +114,7 @@ def command_parser(input_message: str):
 
 def normalize_data(data: list) -> tuple:
     name = data[0].capitalize()
-    phone = data[1]
+    phone = data[1:]
     return name, phone
 
 
@@ -142,4 +129,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # command_parser('close')
+
